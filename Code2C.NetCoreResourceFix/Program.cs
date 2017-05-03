@@ -37,7 +37,7 @@ namespace Code2C.NetCoreResourceFix
 
         private static void FixFiles(string initialPath = "")
         {
-            Console.WriteLine("NetCoreResourceFix V4 e 1/8.");
+            Console.WriteLine("NetCoreResourceFix V5 e 2/3.");
 
             Application.DoEvents();
             if (string.IsNullOrEmpty(initialPath))
@@ -65,6 +65,7 @@ namespace Code2C.NetCoreResourceFix
 
                 if (File.Exists(name) && !ret.Contains(name))
                 {
+                    bool changed = false;
                     string content = string.Empty;
                     using (StreamReader sr = File.OpenText(name))
                     {
@@ -75,6 +76,27 @@ namespace Code2C.NetCoreResourceFix
                     if (content.Contains(" internal "))
                     {
                         content = content.Replace(" internal ", " public ");
+                        changed = true;
+                    }
+                    int indexInitial = content.IndexOf("namespace") + "namespace ".Length;
+                    int indexFinal = content.IndexOf("{", indexInitial);
+                    string namespaceOK = content.Substring(indexInitial, indexFinal - indexInitial).Trim();
+
+                    indexInitial = content.IndexOf("public class ") + "public class ".Length;
+                    indexFinal = content.IndexOf("{", indexInitial);
+                    string classOK = content.Substring(indexInitial, indexFinal - indexInitial).Trim();
+
+                    indexInitial = content.IndexOf("new global::System.Resources.ResourceManager(\"") + "new global::System.Resources.ResourceManager(\"".Length;
+                    indexFinal = content.IndexOf("\"", indexInitial);
+                    string resourceNOK = content.Substring(indexInitial, indexFinal - indexInitial).Trim();
+                    string resourceOK = namespaceOK + "." + classOK;
+
+                    if (resourceOK != resourceNOK)
+                        changed = true;
+
+                    if (changed)
+                    {
+                        content = content.Replace(resourceNOK, resourceOK);
                         File.WriteAllText(name, content);
                         ret.Add(name);
                         Console.WriteLine(file);
